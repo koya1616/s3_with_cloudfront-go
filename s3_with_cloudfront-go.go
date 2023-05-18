@@ -2,9 +2,12 @@ package main
 
 import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
-	// "github.com/aws/aws-cdk-go/awscdk/v2/awssqs"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
+    "github.com/aws/aws-cdk-go/awscdk"
+    "github.com/aws/aws-cdk-go/awscdk/awss3"
+    "github.com/aws/aws-cdk-go/awscdk/awscloudfront"
+    "github.com/aws/aws-cdk-go/awscdk/awscloudfrontorigins"
 )
 
 type S3WithCloudfrontGoStackProps struct {
@@ -12,34 +15,47 @@ type S3WithCloudfrontGoStackProps struct {
 }
 
 func NewS3WithCloudfrontGoStack(scope constructs.Construct, id string, props *S3WithCloudfrontGoStackProps) awscdk.Stack {
-	var sprops awscdk.StackProps
-	if props != nil {
-		sprops = props.StackProps
-	}
-	stack := awscdk.NewStack(scope, &id, &sprops)
+    var sprops awscdk.StackProps
+    if props != nil {
+        sprops = props.StackProps
+    }
+    stack := awscdk.NewStack(scope, &id, &sprops)
 
-	// The code that defines your stack goes here
+    // Create an S3 bucket
+    bucket := awss3.NewBucket(stack, jsii.String("Bucket"), &awss3.BucketProps{
+        PublicReadAccess: jsii.Bool(false),
+    })
 
-	// example resource
-	// queue := awssqs.NewQueue(stack, jsii.String("S3WithCloudfrontGoQueue"), &awssqs.QueueProps{
-	// 	VisibilityTimeout: awscdk.Duration_Seconds(jsii.Number(300)),
-	// })
+    // Create an OAI for the CloudFront distribution
+    oai := awscloudfront.NewOriginAccessIdentity(stack, jsii.String("OAI"), &awscloudfront.OriginAccessIdentityProps{
+        Comment: jsii.String("OAI for S3 bucket"),
+    })
 
-	return stack
+    // Grant read access to the OAI
+    bucket.GrantRead(oai.GrantPrincipal())
+
+    // Create a CloudFront distribution
+    awscloudfront.NewDistribution(stack, jsii.String("MyDistribution"), &awscloudfront.DistributionProps{
+        DefaultBehavior: &awscloudfront.BehaviorOptions{
+            Origin: awscloudfrontorigins.NewS3Origin(bucket, &awscloudfrontorigins.S3OriginProps{
+                OriginAccessIdentity: oai,
+            }),
+        },
+    })
+
+    return stack
 }
 
 func main() {
-	defer jsii.Close()
+    app := awscdk.NewApp(nil)
 
-	app := awscdk.NewApp(nil)
+    NewMyStack(app, "MyStack", &MyStackProps{
+        awscdk.StackProps{
+            Env: env(),
+        },
+    })
 
-	NewS3WithCloudfrontGoStack(app, "S3WithCloudfrontGoStack", &S3WithCloudfrontGoStackProps{
-		awscdk.StackProps{
-			Env: env(),
-		},
-	})
-
-	app.Synth(nil)
+    app.Synth(nil)
 }
 
 // env determines the AWS environment (account+region) in which our stack is to
