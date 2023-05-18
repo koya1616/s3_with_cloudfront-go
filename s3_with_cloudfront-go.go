@@ -4,7 +4,6 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
-    "github.com/aws/aws-cdk-go/awscdk"
     "github.com/aws/aws-cdk-go/awscdk/awss3"
     "github.com/aws/aws-cdk-go/awscdk/awscloudfront"
     "github.com/aws/aws-cdk-go/awscdk/awscloudfrontorigins"
